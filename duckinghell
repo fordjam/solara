@@ -1,0 +1,27 @@
+import duckdb
+
+# Connect to DuckDB
+con = duckdb.connect()
+
+# Enable the httpfs extension
+con.execute("INSTALL httpfs;")
+con.execute("LOAD httpfs;")
+
+# Set up S3 configuration
+con.execute("""
+    SET s3_region='us-west-2';
+    SET s3_access_key_id='your-access-key-id';
+    SET s3_secret_access_key='your-secret-access-key';
+""")
+
+# Create a sample table and insert some data
+con.execute("""
+    CREATE TABLE my_table AS
+    SELECT * FROM read_csv_auto('sample.csv');
+""")
+
+# Write the table to an S3 bucket
+con.execute("""
+    COPY my_table TO 's3://your-bucket-name/path/to/file.csv' 
+    WITH (FORMAT CSV, HEADER TRUE);
+""")
