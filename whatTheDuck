@@ -1,0 +1,48 @@
+import os
+import duckdb
+import pandas as pd
+
+# Directory containing the sales data CSV files
+data_directory = "path/to/your/data/directory"
+
+# Connect to DuckDB (or create it if it doesn't exist)
+con = duckdb.connect('sales_data.duckdb')
+
+# Create a table if it doesn't exist
+con.execute("""
+    CREATE TABLE IF NOT EXISTS sales_data (
+        Date DATE,
+        Sales INTEGER
+    )
+""")
+
+# File to keep track of processed files
+processed_files_file = os.path.join(data_directory, "processed_files.txt")
+
+# Load the list of already processed files
+if os.path.exists(processed_files_file):
+    with open(processed_files_file, 'r') as f:
+        processed_files = f.read().splitlines()
+else:
+    processed_files = []
+
+# Get all CSV files in the directory
+all_files = [f for f in os.listdir(data_directory) if f.endswith('.csv')]
+
+# Process new files
+new_files = [f for f in all_files if f not in processed_files]
+
+for file_name in new_files:
+    file_path = os.path.join(data_directory, file_name)
+    
+    # Load CSV data into a DataFrame
+    df = pd.read_csv(file_path)
+    
+    # Insert DataFrame into DuckDB
+    con.execute("INSERT INTO sales_data SELECT * FROM df")
+
+    # Mark file as processed
+    with open(processed_files_file, 'a') as f:
+        f.write(file_name + '\n')
+
+print(f"Processed {len(new_files)} new files.")
